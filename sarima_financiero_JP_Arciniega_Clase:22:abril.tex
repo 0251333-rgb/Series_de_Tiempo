@@ -1,0 +1,1073 @@
+\documentclass[12pt,a4paper]{article}
+
+% ── Paquetes ────────────────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,mexico]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{enumitem}
+\usepackage{mathtools}
+\usepackage{bm}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{tcolorbox}
+
+\geometry{
+  top=2.5cm, bottom=2.5cm,
+  left=3cm,  right=3cm
+}
+
+% ── Estilo de página ─────────────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\small Modelos SARIMA en Finanzas}
+\lhead{\small Series de Tiempo}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ── Colores y listings ───────────────────────────────────────────────────────
+\definecolor{codebg}{RGB}{245,245,245}
+\definecolor{codeframe}{RGB}{180,180,180}
+\definecolor{keycolor}{RGB}{0,80,160}
+\definecolor{strcolor}{RGB}{160,0,0}
+\definecolor{commentcolor}{RGB}{100,100,100}
+\definecolor{numcolor}{RGB}{0,130,0}
+
+\lstdefinestyle{pythonstyle}{
+  language=Python,
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{keycolor}\bfseries,
+  stringstyle=\color{strcolor},
+  commentstyle=\color{commentcolor}\itshape,
+  numberstyle=\tiny\color{numcolor},
+  frame=single,
+  rulecolor=\color{codeframe},
+  numbers=left,
+  numbersep=6pt,
+  breaklines=true,
+  breakatwhitespace=false,
+  tabsize=4,
+  showstringspaces=false,
+  captionpos=b,
+  xleftmargin=12pt,
+  xrightmargin=4pt,
+  aboveskip=8pt,
+  belowskip=8pt,
+  morekeywords={import,from,as,def,return,with,True,False,None},
+}
+
+\lstset{style=pythonstyle}
+
+% ── Entornos matemáticos ─────────────────────────────────────────────────────
+\newtheorem{definicion}{Definición}[section]
+\newtheorem{proposicion}{Proposición}[section]
+\newtheorem{observacion}{Observación}[section]
+
+% ── Operadores ───────────────────────────────────────────────────────────────
+\DeclareMathOperator{\Cov}{Cov}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\E}{\mathbb{E}}
+\DeclareMathOperator{\Corr}{Corr}
+\newcommand{\B}{\mathsf{B}}          % operador de rezago
+\newcommand{\diff}{\nabla}           % operador diferencia
+
+% ── Título ───────────────────────────────────────────────────────────────────
+\title{
+  \vspace{-1cm}
+  {\Large \textbf{Modelos SARIMA en Series de Tiempo Financieras}} \\[0.6em]
+  {\normalsize Teoría, Identificación, Estimación y Aplicaciones Prácticas con Python}
+}
+\author{
+  \normalsize Notas de curso: Series de Tiempo Aplicadas a Finanzas \\
+  \normalsize Universidad Panamericana --- Ingeniería Financiera
+}
+\date{\normalsize Abril 2026}
+
+% ════════════════════════════════════════════════════════════════════════════
+\begin{document}
+% ════════════════════════════════════════════════════════════════════════════
+
+\maketitle
+\thispagestyle{fancy}
+\tableofcontents
+\newpage
+
+% ────────────────────────────────────────────────────────────────────────────
+\section{Introducción}
+% ────────────────────────────────────────────────────────────────────────────
+
+El análisis de series de tiempo es uno de los pilares fundamentales de las finanzas cuantitativas.
+Desde la predicción de precios de activos y tipos de cambio hasta la modelación de volatilidad y
+riesgo de crédito, los modelos paramétricos de series de tiempo permiten extraer estructura
+estadística de datos secuenciales y generar pronósticos probabilísticos rigurosos.
+
+Dentro de esta familia de modelos, los modelos \textbf{ARIMA} (\textit{Autoregressive Integrated
+Moving Average}) propuestos formalmente por Box y Jenkins (1970) constituyen la base de la
+econometría de series de tiempo univariadas. Su extensión natural, los modelos
+\textbf{SARIMA} (\textit{Seasonal ARIMA}), incorpora patrones estacionales deterministas
+presentes en muchas series financieras: rendimientos mensuales de fondos de inversión,
+tasas de interés con ciclos anuales, volúmenes de negociación con patrones semanales, entre
+otros.
+
+\subsection{Relevancia en Finanzas}
+
+Las aplicaciones de los modelos SARIMA en finanzas son amplias:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Tipos de cambio}: Las series de FX presentan con frecuencia autocorrelaciones
+        de corto plazo y ocasionalmente patrones estacionales asociados a flujos comerciales.
+  \item \textbf{Tasas de interés}: Las tasas de política monetaria y curvas de rendimiento
+        exhiben alta persistencia y ciclos asociados a decisiones de bancos centrales.
+  \item \textbf{Volumen bursátil}: Los volúmenes de negociación presentan estacionalidad
+        intradiaria, semanal y mensual (días de vencimiento de opciones, rebalanceos de índices).
+  \item \textbf{Commodities}: Los precios de energía y agrícolas presentan estacionalidad
+        climática y de demanda.
+  \item \textbf{Riesgo de crédito}: Los índices de morosidad pueden mostrar patrones
+        estacionales relacionados con ciclos económicos.
+\end{itemize}
+
+\subsection{Limitaciones y contexto}
+
+Es importante señalar que los modelos SARIMA pertenecen a la clase de modelos lineales para
+la media condicional de la serie. No modelan directamente la volatilidad condicional (para
+ello existen modelos GARCH), ni capturan no linealidades complejas (modelos de redes neuronales,
+SETAR, etc.). Sin embargo, su interpretabilidad y parsimonia los hacen herramientas de referencia
+obligatoria en cualquier análisis de series de tiempo.
+
+% ────────────────────────────────────────────────────────────────────────────
+\section{Forma General del Modelo SARIMA}
+% ────────────────────────────────────────────────────────────────────────────
+
+\subsection{Notación y operadores}
+
+Denotamos la serie de tiempo como $\{y_t\}_{t=1}^{T}$, donde $t$ indexa el tiempo.
+Introducimos dos operadores esenciales:
+
+\begin{definicion}[Operador de rezago]
+El \textbf{operador de rezago} $\B$ se define como:
+\[
+  \B^k y_t = y_{t-k}, \quad k \in \mathbb{Z}_{\geq 0}.
+\]
+\end{definicion}
+
+\begin{definicion}[Operador de diferencia ordinaria]
+El \textbf{operador de diferencia} de orden $d$ se define como:
+\[
+  \diff^d y_t = (1 - \B)^d y_t.
+\]
+En particular, $\diff y_t = y_t - y_{t-1}$ (diferencia de primer orden).
+\end{definicion}
+
+\begin{definicion}[Operador de diferencia estacional]
+El \textbf{operador de diferencia estacional} de orden $D$ con periodo $s$ se define como:
+\[
+  \diff_s^D y_t = (1 - \B^s)^D y_t.
+\]
+Para $D=1$: $\diff_s y_t = y_t - y_{t-s}$.
+\end{definicion}
+
+\subsection{Definición formal del modelo SARIMA$(p,d,q)(P,D,Q)_s$}
+
+\begin{definicion}[Modelo SARIMA]
+Un proceso $\{y_t\}$ sigue un modelo SARIMA$(p,d,q)(P,D,Q)_s$ si satisface la ecuación:
+\begin{equation}
+  \label{eq:sarima}
+  \boxed{
+    \Phi_P(\B^s)\,\phi_p(\B)\,(1-\B)^d(1-\B^s)^D\,y_t
+    = \Theta_Q(\B^s)\,\theta_q(\B)\,\varepsilon_t
+  }
+\end{equation}
+donde $\varepsilon_t \sim \text{RB}(0,\sigma^2)$ (ruido blanco con varianza $\sigma^2$), y los
+polinomios autorregresivos y de media móvil se definen como sigue.
+\end{definicion}
+
+\paragraph{Polinomios no estacionales:}
+\begin{align}
+  \phi_p(\B)   &= 1 - \phi_1 \B - \phi_2 \B^2 - \cdots - \phi_p \B^p, \label{eq:phi}\\
+  \theta_q(\B) &= 1 + \theta_1 \B + \theta_2 \B^2 + \cdots + \theta_q \B^q. \label{eq:theta}
+\end{align}
+
+\paragraph{Polinomios estacionales:}
+\begin{align}
+  \Phi_P(\B^s)   &= 1 - \Phi_1 \B^s - \Phi_2 \B^{2s} - \cdots - \Phi_P \B^{Ps}, \label{eq:Phi}\\
+  \Theta_Q(\B^s) &= 1 + \Theta_1 \B^s + \Theta_2 \B^{2s} + \cdots + \Theta_Q \B^{Qs}. \label{eq:Theta}
+\end{align}
+
+\subsection{Descripción de parámetros}
+
+\subsubsection{Componentes no estacionales}
+
+\begin{description}[leftmargin=3em,style=nextline]
+  \item[$p$ --- Orden autorregresivo]
+    Indica cuántos rezagos de la serie (ya diferenciada) entran como predictores lineales.
+    Un AR($p$) captura la inercia o memoria de corto plazo del proceso.
+    \textit{Interpretación financiera}: $p=1$ en rendimientos implica que el rendimiento
+    de hoy está parcialmente determinado por el de ayer (posible autocorrelación de primer orden,
+    frecuente en retornos diarios de activos ilíquidos o con efectos momentum débiles).
+
+  \item[$d$ --- Orden de integración ordinaria]
+    Número de diferencias ordinarias necesarias para que la serie sea estacionaria.
+    En series de precios de activos financieros se tiene típicamente $d=1$, pues los precios
+    son no estacionarios (caminata aleatoria) pero los rendimientos logarítmicos son estacionarios.
+    La condición de estacionariedad requiere que todas las raíces de $\phi_p(z) = 0$ estén
+    fuera del círculo unitario.
+
+  \item[$q$ --- Orden de media móvil]
+    Número de shocks pasados (errores de pronóstico) que afectan el nivel actual de la serie.
+    Un MA($q$) implica que el proceso tiene \textit{memoria finita} de exactamente $q$ periodos.
+    \textit{Interpretación financiera}: $q=1$ puede reflejar el ajuste de precios ante nueva
+    información con un rezago (e.g., mercados con liquidez reducida).
+\end{description}
+
+\subsubsection{Componentes estacionales}
+
+\begin{description}[leftmargin=3em,style=nextline]
+  \item[$P$ --- Orden autorregresivo estacional]
+    Número de rezagos estacionales de la serie diferenciada que actúan como predictores.
+    Captura la dependencia entre observaciones separadas exactamente $s$ periodos.
+
+  \item[$D$ --- Orden de integración estacional]
+    Número de diferencias estacionales necesarias para eliminar tendencias estacionales.
+    Una diferencia estacional $D=1$ sustrae el valor del mismo periodo del año (o semana, mes)
+    anterior: $y_t - y_{t-s}$.
+
+  \item[$Q$ --- Orden de media móvil estacional]
+    Número de shocks estacionales pasados incluidos en el modelo.
+
+  \item[$s$ --- Periodo estacional]
+    Frecuencia del ciclo estacional. Valores comunes en finanzas:
+    \begin{itemize}
+      \item $s = 4$: datos trimestrales con ciclo anual.
+      \item $s = 12$: datos mensuales con ciclo anual.
+      \item $s = 5$ o $s=22$: datos diarios con ciclo semanal o mensual.
+      \item $s = 252$: datos diarios con ciclo anual (días hábiles).
+    \end{itemize}
+\end{description}
+
+\subsection{Condiciones de estacionariedad e invertibilidad}
+
+Para que el modelo SARIMA sea estacionario (en la parte no integrada) e invertible, se
+requiere que todas las raíces de los polinomios $\phi_p(z) = 0$ y $\Phi_P(z^s) = 0$ estén
+fuera del círculo unitario en el plano complejo, y que análogamente todas las raíces de
+$\theta_q(z) = 0$ y $\Theta_Q(z^s) = 0$ estén fuera del círculo unitario.
+
+% ────────────────────────────────────────────────────────────────────────────
+\section{Herramientas de Identificación}
+% ────────────────────────────────────────────────────────────────────────────
+
+\subsection{Función de Autocorrelación (ACF)}
+
+\begin{definicion}[ACF]
+Para un proceso estacionario $\{y_t\}$ con media $\mu$ y varianza $\sigma_y^2 < \infty$,
+la \textbf{función de autocorrelación} (ACF) en el rezago $k$ se define como:
+\[
+  \rho(k) = \frac{\Cov(y_t, y_{t-k})}{\Var(y_t)}
+           = \frac{\gamma(k)}{\gamma(0)}, \quad k = 0, \pm 1, \pm 2, \ldots
+\]
+donde $\gamma(k) = \Cov(y_t, y_{t-k})$ es la función de autocovarianza.
+\end{definicion}
+
+\paragraph{Intuición.}
+La ACF mide la correlación lineal entre $y_t$ y su propio pasado $y_{t-k}$, sin controlar
+por los rezagos intermedios. En la muestra, se estima como:
+\[
+  \hat{\rho}(k) = \frac{\displaystyle\sum_{t=k+1}^{T}(y_t - \bar{y})(y_{t-k} - \bar{y})}
+                       {\displaystyle\sum_{t=1}^{T}(y_t - \bar{y})^2}.
+\]
+
+\paragraph{Uso en selección de modelos.}
+\begin{itemize}
+  \item Un proceso \textbf{MA($q$)} presenta ACF que se \textit{trunca} exactamente en el rezago $q$:
+        $\rho(k) = 0$ para $|k| > q$.
+  \item Un proceso \textbf{AR($p$)} presenta ACF que \textit{decae} exponencialmente (o de forma
+        sinusoidal amortiguada), sin truncamiento abrupto.
+  \item La presencia de picos significativos en los rezagos $k = s, 2s, 3s, \ldots$ indica
+        componentes estacionales.
+  \item Las bandas de confianza aproximadas al $95\%$ son $\pm 1.96 / \sqrt{T}$.
+\end{itemize}
+
+\subsection{Función de Autocorrelación Parcial (PACF)}
+
+\begin{definicion}[PACF]
+La \textbf{función de autocorrelación parcial} (PACF) en el rezago $k$, denotada $\alpha(k)$,
+mide la correlación entre $y_t$ e $y_{t-k}$ \emph{eliminando} el efecto lineal de las variables
+intermedias $y_{t-1}, y_{t-2}, \ldots, y_{t-k+1}$:
+\[
+  \alpha(k) = \Corr(y_t - \hat{y}_t^{(k)},\; y_{t-k} - \hat{y}_{t-k}^{(k)}),
+\]
+donde $\hat{y}_t^{(k)}$ es la proyección lineal de $y_t$ sobre $\{y_{t-1}, \ldots, y_{t-k+1}\}$.
+\end{definicion}
+
+\paragraph{Intuición.}
+La PACF responde a la pregunta: ¿después de descontar la influencia de los rezagos
+$1, 2, \ldots, k-1$, aún existe correlación significativa entre $y_t$ e $y_{t-k}$?
+
+\paragraph{Uso en selección de modelos.}
+\begin{itemize}
+  \item Un proceso \textbf{AR($p$)} presenta PACF que se \textit{trunca} exactamente en el
+        rezago $p$: $\alpha(k) = 0$ para $k > p$.
+  \item Un proceso \textbf{MA($q$)} presenta PACF que \textit{decae} gradualmente.
+  \item Combinando ACF y PACF se puede identificar tentativamente el orden $(p,q)$ del modelo.
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\caption{Patrones de ACF y PACF según el proceso generador de datos}
+\label{tab:acf_pacf}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Proceso} & \textbf{ACF} & \textbf{PACF} \\
+\midrule
+AR($p$) & Decae exponencialmente & Se trunca en rezago $p$ \\
+MA($q$) & Se trunca en rezago $q$ & Decae gradualmente \\
+ARMA($p,q$) & Decae gradualmente & Decae gradualmente \\
+RB (Ruido blanco) & $\approx 0$ para $k \geq 1$ & $\approx 0$ para $k \geq 1$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Criterio de Información de Akaike (AIC)}
+
+\begin{definicion}[AIC]
+Sea $\hat{L}$ el valor máximo de la función de verosimilitud del modelo con $k$ parámetros
+libres. El \textbf{criterio de Akaike} se define como:
+\[
+  \mathrm{AIC} = -2\ln(\hat{L}) + 2k.
+\]
+\end{definicion}
+
+\paragraph{Intuición.}
+El AIC penaliza la complejidad del modelo (número de parámetros $k$) frente al ajuste
+(log-verosimilitud). El término $-2\ln(\hat{L})$ disminuye al añadir parámetros (mejor ajuste),
+pero el término $2k$ crece linealmente. El AIC busca el \textit{balance óptimo}.
+
+\paragraph{Uso práctico.}
+Se prefiere el modelo con \textbf{menor AIC}. Al comparar modelos SARIMA con distintos
+órdenes $(p,q,P,Q)$, el AIC tiende a seleccionar modelos más parsimoniosos pero puede
+\textit{sobreajustar} ligeramente en muestras pequeñas.
+
+\subsection{Criterio de Información Bayesiano (BIC)}
+
+\begin{definicion}[BIC]
+\[
+  \mathrm{BIC} = -2\ln(\hat{L}) + k\ln(T),
+\]
+donde $T$ es el tamaño de la muestra.
+\end{definicion}
+
+\paragraph{Intuición y comparación con AIC.}
+El BIC penaliza más severamente la complejidad que el AIC (pues $\ln(T) > 2$ para $T > 7$).
+Como consecuencia, el BIC es \textit{consistente}: cuando $T \to \infty$, selecciona el verdadero
+modelo generador de datos (si este pertenece a la familia considerada), mientras que el AIC
+tiende a elegir modelos ligeramente sobreajustados.
+
+\paragraph{Regla práctica.}
+\begin{itemize}
+  \item Si AIC y BIC coinciden en el modelo seleccionado, existe evidencia sólida.
+  \item Si difieren, se prefiere BIC en muestras grandes y AIC en muestras pequeñas o cuando
+        el objetivo es minimizar el error de pronóstico (no identificar el verdadero modelo).
+\end{itemize}
+
+\subsection{Diferenciación: $d$ y $D$}
+
+La diferenciación tiene como objetivo transformar una serie no estacionaria en una serie
+estacionaria. Las pruebas formales para determinar $d$ y $D$ incluyen:
+
+\begin{itemize}
+  \item \textbf{Prueba de Dickey-Fuller Aumentada (ADF)}: contrasta $H_0$: raíz unitaria vs.
+        $H_1$: estacionariedad.
+  \item \textbf{Prueba KPSS}: contrasta $H_0$: estacionariedad vs. $H_1$: raíz unitaria.
+  \item \textbf{Criterio visual}: gráfica de la serie y correlograma (ACF muy persistente
+        sugiere no estacionariedad).
+\end{itemize}
+
+Para la diferenciación estacional, se aplica $\diff_s^D y_t = (1 - \B^s)^D y_t$ y se verifica
+que los picos estacionales desaparecen del ACF.
+
+\subsection{Estacionariedad}
+
+\begin{definicion}[Estacionariedad débil]
+Un proceso $\{y_t\}$ es \textbf{débilmente estacionario} (o estacionario de covarianza) si:
+\begin{enumerate}
+  \item $\E[y_t] = \mu < \infty$ para todo $t$ (media constante),
+  \item $\Var(y_t) = \sigma^2 < \infty$ para todo $t$ (varianza finita y constante),
+  \item $\Cov(y_t, y_{t-k}) = \gamma(k)$ depende solo de $k$, no de $t$ (autocovarianzas
+        independientes del tiempo).
+\end{enumerate}
+\end{definicion}
+
+\paragraph{Relevancia en finanzas.}
+Los precios de activos son típicamente no estacionarios (procesos integrados de orden 1,
+$I(1)$), mientras que los rendimientos logarítmicos $r_t = \ln(P_t/P_{t-1})$ suelen ser
+estacionarios $I(0)$. Trabajar con la serie no estacionaria directamente llevaría a
+\textit{regresiones espurias} con $R^2$ elevados y estadísticos $t$ no confiables.
+
+\subsection{Ruido Blanco}
+
+\begin{definicion}[Ruido blanco]
+Un proceso $\{\varepsilon_t\}$ es \textbf{ruido blanco} si:
+\[
+  \E[\varepsilon_t] = 0, \quad \E[\varepsilon_t^2] = \sigma^2, \quad \E[\varepsilon_t \varepsilon_s] = 0 \text{ para } t \neq s.
+\]
+Si adicionalmente $\varepsilon_t \sim \mathcal{N}(0, \sigma^2)$, se denomina \textbf{ruido blanco gaussiano}.
+\end{definicion}
+
+\paragraph{Uso diagnóstico.}
+Los residuos de un modelo SARIMA bien especificado deben comportarse como ruido blanco.
+Se verifica mediante:
+\begin{itemize}
+  \item \textbf{Prueba de Ljung-Box}: contrasta $H_0$: no autocorrelación en los residuos
+        hasta el rezago $m$.
+        \[
+          Q_{LB} = T(T+2)\sum_{k=1}^{m}\frac{\hat{\rho}_\varepsilon^2(k)}{T-k} \overset{H_0}{\sim} \chi^2(m - p - q - P - Q).
+        \]
+  \item \textbf{Prueba de Jarque-Bera}: verifica normalidad de los residuos.
+\end{itemize}
+
+% ────────────────────────────────────────────────────────────────────────────
+\section{Metodología Box-Jenkins}
+% ────────────────────────────────────────────────────────────────────────────
+
+La metodología Box-Jenkins es un procedimiento iterativo de cuatro etapas para la
+construcción de modelos SARIMA:
+
+\subsection{Etapa 1: Identificación}
+
+\begin{enumerate}
+  \item \textbf{Graficar la serie}: detectar visualmente tendencias, quiebres estructurales,
+        heterocedasticidad y patrones estacionales.
+  \item \textbf{Transformaciones}: si la varianza es no constante (heterocedasticidad),
+        aplicar la transformación logarítmica $\tilde{y}_t = \ln(y_t)$ o la transformación
+        Box-Cox:
+        \[
+          \tilde{y}_t = \begin{cases} (y_t^\lambda - 1)/\lambda & \lambda \neq 0 \\ \ln(y_t) & \lambda = 0 \end{cases}.
+        \]
+  \item \textbf{Diferenciación}: determinar $d$ y $D$ mediante pruebas de raíz unitaria
+        (ADF, KPSS) y análisis visual del ACF.
+  \item \textbf{Análisis ACF y PACF}: sobre la serie diferenciada estacionaria, examinar
+        los correlogramas para proponer órdenes tentativos $(p, q)$ y $(P, Q)$.
+  \item \textbf{Definir candidatos}: listar un conjunto de modelos candidatos
+        SARIMA$(p,d,q)(P,D,Q)_s$ con orden bajo (parsimonia).
+\end{enumerate}
+
+\subsection{Etapa 2: Estimación}
+
+Los parámetros del modelo SARIMA se estiman típicamente por \textbf{máxima verosimilitud
+condicional} (MLE). Dado el modelo~\eqref{eq:sarima}, la función de log-verosimilitud
+condicional bajo normalidad de $\varepsilon_t$ es:
+\[
+  \ell(\bm{\phi}, \bm{\theta}, \bm{\Phi}, \bm{\Theta}, \sigma^2 \mid \mathbf{y})
+  = -\frac{T^*}{2}\ln(2\pi\sigma^2) - \frac{1}{2\sigma^2}\sum_{t}\varepsilon_t^2,
+\]
+donde $T^* = T - d - Ds$ es el número efectivo de observaciones tras la diferenciación, y
+$\varepsilon_t$ son los residuos generados recursivamente por el modelo.
+
+Los estimadores de MLE son asintóticamente normales bajo condiciones de regularidad, lo que
+permite construir intervalos de confianza y pruebas de hipótesis estándar.
+
+\subsection{Etapa 3: Validación (selección de modelo)}
+
+Una vez estimados los modelos candidatos:
+\begin{enumerate}
+  \item Comparar AIC y BIC entre modelos: seleccionar el de menor valor.
+  \item Verificar que todos los coeficientes estimados sean estadísticamente significativos
+        (valor-$p < 0.05$ o intervalos de confianza que excluyan cero).
+  \item Comprobar la invertibilidad y estacionariedad: las raíces de los polinomios
+        estimados deben estar fuera del círculo unitario.
+  \item Principio de parsimonia: ante modelos con AIC/BIC similares, preferir el más simple.
+\end{enumerate}
+
+\subsection{Etapa 4: Diagnóstico de residuos}
+
+El modelo seleccionado es adecuado si los residuos $\hat{\varepsilon}_t$ se comportan
+como ruido blanco:
+\begin{enumerate}
+  \item \textbf{Gráfica de residuos}: no debe haber patrones, tendencias ni heterocedasticidad visible.
+  \item \textbf{ACF/PACF de residuos}: todos los picos deben estar dentro de las bandas
+        de confianza al 95\%.
+  \item \textbf{Prueba de Ljung-Box}: $p$-valor$> 0.05$ indica ausencia de autocorrelación.
+  \item \textbf{Normalidad}: histograma y QQ-plot de residuos; prueba de Jarque-Bera.
+  \item Si el diagnóstico falla, se regresa a la Etapa 1 y se reidentifica el modelo.
+\end{enumerate}
+
+% ────────────────────────────────────────────────────────────────────────────
+\section{Ejemplos Prácticos con Python}
+% ────────────────────────────────────────────────────────────────────────────
+
+Los tres ejemplos siguientes utilizan datos financieros reales descargados mediante
+\texttt{yfinance}. El paquete \texttt{statsmodels} provee la implementación de SARIMA
+a través de \texttt{SARIMAX}. Se asume la instalación previa de:
+\begin{center}
+  \texttt{pip install yfinance statsmodels pandas matplotlib scipy}
+\end{center}
+
+% ──────────────────────────────────────────
+\subsection{Ejemplo 1: Tipo de cambio USD/MXN --- Diferenciación y ARIMA}
+% ──────────────────────────────────────────
+
+\subsubsection{Descripción de los datos}
+
+El tipo de cambio peso mexicano frente al dólar estadounidense (USD/MXN) es una serie
+diaria con alta persistencia. Los precios del FX son $I(1)$: la serie de niveles tiene
+raíz unitaria, pero los rendimientos logarítmicos diarios son estacionarios. Utilizaremos
+datos de los últimos dos años para ajustar un modelo ARIMA a los rendimientos.
+
+\subsubsection{Código Python}
+
+\begin{lstlisting}[caption={Ejemplo 1: ARIMA para rendimientos USD/MXN},label=lst:usdmxn]
+import yfinance as yf
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from statsmodels.tsa.stattools import adfuller, acf, pacf
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from statsmodels.tsa.statespace.sarimax import SARIMAX
+from scipy import stats
+import warnings
+warnings.filterwarnings('ignore')
+
+# ── 1. Descarga de datos ────────────────────────────────────
+ticker = yf.Ticker("MXN=X")
+df = ticker.history(period="2y", interval="1d")
+precio = df['Close'].dropna()
+rendimiento = np.log(precio).diff().dropna()
+
+# ── 2. Visualizacion ────────────────────────────────────────
+fig, axes = plt.subplots(2, 1, figsize=(12, 6), sharex=False)
+axes[0].plot(precio, color='steelblue', linewidth=0.8)
+axes[0].set_title('Precio USD/MXN (cierre diario)')
+axes[0].set_ylabel('Pesos por dolar')
+axes[1].plot(rendimiento, color='darkred', linewidth=0.6)
+axes[1].axhline(0, color='black', linewidth=0.5)
+axes[1].set_title('Rendimiento logaritmico diario')
+axes[1].set_ylabel('log-retorno')
+plt.tight_layout()
+plt.savefig('usdmxn_serie.png', dpi=150, bbox_inches='tight')
+plt.show()
+
+# ── 3. Prueba ADF ───────────────────────────────────────────
+def adf_test(serie, nombre):
+    resultado = adfuller(serie, autolag='AIC')
+    print(f"\n=== ADF: {nombre} ===")
+    print(f"  Estadistico ADF : {resultado[0]:.4f}")
+    print(f"  p-valor         : {resultado[1]:.4f}")
+    print(f"  Valores criticos: {resultado[4]}")
+    if resultado[1] < 0.05:
+        print("  -> Rechazamos H0: la serie ES estacionaria.")
+    else:
+        print("  -> No rechazamos H0: la serie NO es estacionaria.")
+
+adf_test(precio, "Precio USD/MXN")
+adf_test(rendimiento, "Rendimiento log USD/MXN")
+
+# ── 4. ACF y PACF ───────────────────────────────────────────
+fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+plot_acf(rendimiento, lags=30, ax=axes[0], title='ACF - Rendimiento USD/MXN')
+plot_pacf(rendimiento, lags=30, ax=axes[1], title='PACF - Rendimiento USD/MXN')
+plt.tight_layout()
+plt.savefig('usdmxn_acf_pacf.png', dpi=150, bbox_inches='tight')
+plt.show()
+
+# ── 5. Seleccion de modelo (grid search AIC) ────────────────
+resultados = []
+for p in range(0, 4):
+    for q in range(0, 4):
+        try:
+            modelo = SARIMAX(rendimiento, order=(p, 0, q),
+                             trend='n', enforce_stationarity=True,
+                             enforce_invertibility=True)
+            res = modelo.fit(disp=False)
+            resultados.append({'p': p, 'q': q,
+                                'AIC': res.aic, 'BIC': res.bic})
+        except Exception:
+            pass
+
+df_res = pd.DataFrame(resultados).sort_values('AIC')
+print("\n=== Top 5 modelos por AIC ===")
+print(df_res.head())
+
+# ── 6. Modelo optimo ────────────────────────────────────────
+mejor = df_res.iloc[0]
+p_opt, q_opt = int(mejor['p']), int(mejor['q'])
+print(f"\nModelo seleccionado: ARIMA({p_opt}, 0, {q_opt})")
+
+modelo_final = SARIMAX(rendimiento, order=(p_opt, 0, q_opt),
+                       trend='n').fit(disp=False)
+print(modelo_final.summary())
+
+# ── 7. Diagnostico de residuos ──────────────────────────────
+residuos = modelo_final.resid
+fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+axes[0, 0].plot(residuos, color='navy', linewidth=0.6)
+axes[0, 0].set_title('Residuos')
+plot_acf(residuos, lags=20, ax=axes[0, 1], title='ACF Residuos')
+axes[1, 0].hist(residuos, bins=40, color='steelblue', edgecolor='white')
+axes[1, 0].set_title('Histograma de Residuos')
+stats.probplot(residuos, dist='norm', plot=axes[1, 1])
+axes[1, 1].set_title('QQ-Plot')
+plt.tight_layout()
+plt.savefig('usdmxn_diagnostico.png', dpi=150, bbox_inches='tight')
+plt.show()
+
+# Prueba Ljung-Box
+from statsmodels.stats.diagnostic import acorr_ljungbox
+lb = acorr_ljungbox(residuos, lags=[10, 20], return_df=True)
+print("\n=== Prueba Ljung-Box ===")
+print(lb)
+
+# ── 8. Prediccion ───────────────────────────────────────────
+n_pred = 10
+pred = modelo_final.get_forecast(steps=n_pred)
+pred_ci = pred.conf_int(alpha=0.05)
+pred_mean = pred.predicted_mean
+
+print("\n=== Prediccion 10 dias adelante (rendimiento) ===")
+print(pd.DataFrame({'Pred': pred_mean,
+                    'IC_inf': pred_ci.iloc[:, 0],
+                    'IC_sup': pred_ci.iloc[:, 1]}))
+\end{lstlisting}
+
+\subsubsection{Interpretación de resultados}
+
+La prueba ADF típicamente rechaza la raíz unitaria en los rendimientos logarítmicos del
+USD/MXN, confirmando la estacionariedad. El análisis ACF/PACF de los rendimientos suele
+mostrar autocorrelaciones pequeñas pero significativas en algunos rezagos, lo que motiva
+la inclusión de términos AR y/o MA de orden bajo. El grid search selecciona el modelo
+con menor AIC, generalmente ARIMA(1,0,1) o ARIMA(0,0,1) para rendimientos de FX.
+El diagnóstico de residuos verifica que los errores del modelo no presentan estructura
+remanente: la prueba de Ljung-Box no debe rechazar $H_0$ de no autocorrelación.
+
+% ──────────────────────────────────────────
+\subsection{Ejemplo 2: Retornos mensuales del S\&P 500 --- SARIMA con componente estacional}
+% ──────────────────────────────────────────
+
+\subsubsection{Descripción de los datos}
+
+El índice S\&P 500 (ticker \texttt{GSPC}) presentado en frecuencia mensual puede exhibir
+patrones estacionales relacionados con ciclos de ganancias corporativas, rebalanceos
+institucionales y efectos de calendario (``enero'', ``venta en mayo'', etc.). Utilizaremos
+10 años de datos mensuales y ajustaremos un SARIMA$(p,d,q)(P,D,Q)_{12}$.
+
+\subsubsection{Código Python}
+
+\begin{lstlisting}[caption={Ejemplo 2: SARIMA para S\&P 500 mensual},label=lst:sp500]
+import yfinance as yf
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from statsmodels.tsa.stattools import adfuller
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from statsmodels.tsa.statespace.sarimax import SARIMAX
+import warnings
+warnings.filterwarnings('ignore')
+
+# ── 1. Descarga y resampleo mensual ────────────────────────
+sp500 = yf.download("^GSPC", period="10y", interval="1mo", progress=False)
+precio_m = sp500['Close'].dropna()
+retorno_m = np.log(precio_m).diff().dropna() * 100   # en porcentaje
+
+print(f"Observaciones: {len(retorno_m)}")
+print(retorno_m.describe())
+
+# ── 2. Visualizacion ────────────────────────────────────────
+fig, axes = plt.subplots(2, 1, figsize=(12, 6))
+axes[0].plot(precio_m, color='steelblue')
+axes[0].set_title('S&P 500 (precio mensual de cierre)')
+axes[1].bar(retorno_m.index, retorno_m, color=np.where(retorno_m >= 0,
+            'green', 'red'), width=20)
+axes[1].set_title('Retorno logaritmico mensual (%)')
+plt.tight_layout()
+plt.savefig('sp500_serie.png', dpi=150, bbox_inches='tight')
+plt.show()
+
+# ── 3. Prueba ADF ───────────────────────────────────────────
+r_adf = adfuller(retorno_m, autolag='AIC')
+print(f"\nADF retornos mensuales: stat={r_adf[0]:.4f}, p={r_adf[1]:.4f}")
+
+# ── 4. ACF/PACF (hasta rezago 36) ──────────────────────────
+fig, axes = plt.subplots(1, 2, figsize=(14, 4))
+plot_acf(retorno_m, lags=36, ax=axes[0],
+         title='ACF - Retorno mensual S&P 500')
+plot_pacf(retorno_m, lags=36, ax=axes[1],
+          title='PACF - Retorno mensual S&P 500')
+plt.tight_layout()
+plt.savefig('sp500_acf_pacf.png', dpi=150, bbox_inches='tight')
+plt.show()
+
+# ── 5. Grid search SARIMA ────────────────────────────────────
+S = 12    # estacionalidad mensual
+resultados = []
+for p in range(0, 3):
+    for q in range(0, 3):
+        for P in range(0, 2):
+            for Q in range(0, 2):
+                try:
+                    m = SARIMAX(retorno_m,
+                                order=(p, 0, q),
+                                seasonal_order=(P, 0, Q, S),
+                                trend='c',
+                                enforce_stationarity=True,
+                                enforce_invertibility=True)
+                    res = m.fit(disp=False, maxiter=200)
+                    resultados.append({
+                        'p': p, 'q': q, 'P': P, 'Q': Q,
+                        'AIC': res.aic, 'BIC': res.bic
+                    })
+                except Exception:
+                    pass
+
+df_grid = pd.DataFrame(resultados).sort_values('AIC').reset_index(drop=True)
+print("\n=== Top 5 modelos SARIMA por AIC ===")
+print(df_grid.head())
+
+# ── 6. Ajuste del modelo optimo ─────────────────────────────
+fila = df_grid.iloc[0]
+p_o, q_o, P_o, Q_o = int(fila.p), int(fila.q), int(fila.P), int(fila.Q)
+print(f"\nModelo: SARIMA({p_o},0,{q_o})({P_o},0,{Q_o})_12")
+
+modelo = SARIMAX(retorno_m,
+                 order=(p_o, 0, q_o),
+                 seasonal_order=(P_o, 0, Q_o, S),
+                 trend='c').fit(disp=False, maxiter=300)
+print(modelo.summary())
+
+# ── 7. Diagnostico ──────────────────────────────────────────
+modelo.plot_diagnostics(figsize=(12, 8))
+plt.suptitle('Diagnostico de residuos - S&P 500 SARIMA', y=1.02)
+plt.tight_layout()
+plt.savefig('sp500_diagnostico.png', dpi=150, bbox_inches='tight')
+plt.show()
+
+from statsmodels.stats.diagnostic import acorr_ljungbox
+lb = acorr_ljungbox(modelo.resid, lags=[12, 24], return_df=True)
+print("\n=== Ljung-Box ===")
+print(lb)
+
+# ── 8. Prediccion 12 meses ──────────────────────────────────
+forecast = modelo.get_forecast(steps=12)
+fc_mean = forecast.predicted_mean
+fc_ci   = forecast.conf_int(alpha=0.05)
+
+fig, ax = plt.subplots(figsize=(12, 5))
+ax.plot(retorno_m[-36:], label='Historico', color='steelblue')
+ax.plot(fc_mean, label='Prediccion', color='darkorange', linestyle='--')
+ax.fill_between(fc_ci.index,
+                fc_ci.iloc[:, 0], fc_ci.iloc[:, 1],
+                alpha=0.25, color='orange', label='IC 95%')
+ax.axhline(0, color='black', linewidth=0.5)
+ax.set_title('Prediccion 12 meses - Retorno S&P 500')
+ax.legend()
+plt.tight_layout()
+plt.savefig('sp500_forecast.png', dpi=150, bbox_inches='tight')
+plt.show()
+\end{lstlisting}
+
+\subsubsection{Interpretación de resultados}
+
+Los retornos logarítmicos mensuales del S\&P 500 son estacionarios (la ADF rechaza la raíz
+unitaria), con media positiva pequeña (prima de riesgo) y desviación estándar elevada.
+La ACF mensual puede mostrar picos en rezagos múltiplos de 12 (efecto enero, ciclos anuales),
+lo que justifica la componente estacional con $s=12$. El BIC típicamente selecciona modelos
+parsimoniosos como SARIMA$(1,0,0)(0,0,1)_{12}$ o similares. La predicción puntual a 12 meses
+tiene intervalos de confianza amplios, lo cual es coherente con la alta incertidumbre inherente
+a los retornos bursátiles.
+
+% ──────────────────────────────────────────
+\subsection{Ejemplo 3: Petróleo WTI --- SARIMA con diferenciación estacional}
+% ──────────────────────────────────────────
+
+\subsubsection{Descripción de los datos}
+
+Los precios del petróleo crudo WTI (West Texas Intermediate) exhiben fuerte estacionalidad
+relacionada con la demanda de combustible (verano en EE.UU., invierno en Europa) y los ciclos
+de producción de la OPEP+. Trabajaremos con datos semanales de los últimos 5 años,
+aplicando $d=1$ (precio no estacionario) y $D=1$ con $s=52$ (ciclo anual en semanas).
+
+\subsubsection{Código Python}
+
+\begin{lstlisting}[caption={Ejemplo 3: SARIMA para petróleo WTI semanal},label=lst:wti]
+import yfinance as yf
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from statsmodels.tsa.stattools import adfuller, kpss
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from statsmodels.tsa.statespace.sarimax import SARIMAX
+from statsmodels.stats.diagnostic import acorr_ljungbox
+from scipy import stats
+import warnings
+warnings.filterwarnings('ignore')
+
+# ── 1. Descarga datos WTI semanales ────────────────────────
+wti = yf.download("CL=F", period="5y", interval="1wk", progress=False)
+precio_wti = wti['Close'].dropna()
+log_precio  = np.log(precio_wti)
+
+print(f"Observaciones: {len(precio_wti)}")
+print(precio_wti.describe())
+
+# ── 2. Visualizacion ────────────────────────────────────────
+fig, axes = plt.subplots(3, 1, figsize=(12, 9))
+axes[0].plot(precio_wti, color='saddlebrown', linewidth=0.8)
+axes[0].set_title('Precio WTI (cierre semanal, USD/barril)')
+axes[1].plot(log_precio, color='darkorange', linewidth=0.8)
+axes[1].set_title('Log-precio WTI')
+# primera diferencia del log-precio
+diff1 = log_precio.diff().dropna()
+axes[2].plot(diff1, color='navy', linewidth=0.6)
+axes[2].axhline(0, color='black', lw=0.5)
+axes[2].set_title('Primera diferencia del log-precio WTI')
+plt.tight_layout()
+plt.savefig('wti_serie.png', dpi=150, bbox_inches='tight')
+plt.show()
+
+# ── 3. Pruebas de estacionariedad ───────────────────────────
+def adf_kpss(serie, nombre):
+    adf_r = adfuller(serie, autolag='AIC')
+    kpss_r = kpss(serie, regression='c', nlags='auto')
+    print(f"\n--- {nombre} ---")
+    print(f"  ADF  stat={adf_r[0]:.4f}, p={adf_r[1]:.4f}  "
+          f"({'estacionaria' if adf_r[1] < 0.05 else 'NO estacionaria'})")
+    print(f"  KPSS stat={kpss_r[0]:.4f}, p={kpss_r[1]:.4f}  "
+          f"({'NO estacionaria' if kpss_r[1] < 0.05 else 'estacionaria'})")
+
+adf_kpss(log_precio, "Log-precio WTI (nivel)")
+adf_kpss(diff1, "Diferencia log-precio WTI")
+
+# ── 4. ACF y PACF de la serie diferenciada ──────────────────
+fig, axes = plt.subplots(1, 2, figsize=(14, 4))
+plot_acf(diff1, lags=60, ax=axes[0],
+         title='ACF - Diff Log-precio WTI')
+plot_pacf(diff1, lags=60, ax=axes[1],
+          title='PACF - Diff Log-precio WTI')
+plt.tight_layout()
+plt.savefig('wti_acf_pacf.png', dpi=150, bbox_inches='tight')
+plt.show()
+
+# ── 5. Diferenciacion estacional (D=1, s=52) ────────────────
+diff_estacional = log_precio.diff(52).diff(1).dropna()
+print(f"\nObservaciones tras doble diferenciacion: {len(diff_estacional)}")
+
+adf_kpss(diff_estacional, "Diff estacional + ordinaria")
+
+fig, axes = plt.subplots(1, 2, figsize=(14, 4))
+plot_acf(diff_estacional, lags=60, ax=axes[0],
+         title='ACF - Diff estacional WTI')
+plot_pacf(diff_estacional, lags=60, ax=axes[1],
+          title='PACF - Diff estacional WTI')
+plt.tight_layout()
+plt.savefig('wti_acf_pacf_diff.png', dpi=150, bbox_inches='tight')
+plt.show()
+
+# ── 6. Modelos candidatos SARIMA ────────────────────────────
+# Usamos s=52 (ciclo anual en semanas)
+# Para reducir tiempo de computo, limitamos el espacio de busqueda
+S_wti = 52
+candidatos = [
+    (1, 1, 0, 0, 1, 0),
+    (0, 1, 1, 0, 1, 1),
+    (1, 1, 1, 0, 1, 0),
+    (1, 1, 1, 0, 1, 1),
+    (2, 1, 1, 0, 1, 0),
+    (1, 1, 2, 0, 1, 1),
+    (0, 1, 1, 1, 1, 0),
+    (1, 1, 0, 1, 1, 1),
+]
+
+resultados_wti = []
+for (p, d, q, P, D, Q) in candidatos:
+    try:
+        m = SARIMAX(log_precio,
+                    order=(p, d, q),
+                    seasonal_order=(P, D, Q, S_wti),
+                    trend='n',
+                    enforce_stationarity=True,
+                    enforce_invertibility=True)
+        res = m.fit(disp=False, maxiter=300)
+        resultados_wti.append({
+            'Orden': f"({p},{d},{q})({P},{D},{Q})_{S_wti}",
+            'AIC': round(res.aic, 2),
+            'BIC': round(res.bic, 2)
+        })
+        print(f"  SARIMA{(p,d,q)}{(P,D,Q)}_{S_wti} "
+              f"AIC={res.aic:.2f}  BIC={res.bic:.2f}")
+    except Exception as e:
+        print(f"  Error en ({p},{d},{q})({P},{D},{Q}): {e}")
+
+df_wti = pd.DataFrame(resultados_wti).sort_values('AIC')
+print("\n=== Ranking por AIC ===")
+print(df_wti)
+
+# ── 7. Modelo final: SARIMA(1,1,1)(0,1,1)_52 ───────────────
+modelo_wti = SARIMAX(log_precio,
+                     order=(1, 1, 1),
+                     seasonal_order=(0, 1, 1, 52),
+                     trend='n').fit(disp=False, maxiter=400)
+print("\n" + "="*60)
+print(modelo_wti.summary())
+
+# ── 8. Diagnostico ──────────────────────────────────────────
+resid_wti = modelo_wti.resid
+fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+axes[0, 0].plot(resid_wti, linewidth=0.6, color='navy')
+axes[0, 0].set_title('Residuos')
+plot_acf(resid_wti, lags=30, ax=axes[0, 1], title='ACF Residuos')
+axes[1, 0].hist(resid_wti, bins=40, color='steelblue', edgecolor='white')
+axes[1, 0].set_title('Histograma')
+stats.probplot(resid_wti, dist='norm', plot=axes[1, 1])
+plt.tight_layout()
+plt.savefig('wti_diagnostico.png', dpi=150, bbox_inches='tight')
+plt.show()
+
+lb_wti = acorr_ljungbox(resid_wti, lags=[10, 20, 52], return_df=True)
+print("\n=== Ljung-Box (WTI) ===")
+print(lb_wti)
+
+# ── 9. Prediccion 8 semanas ─────────────────────────────────
+n_steps = 8
+fc_wti = modelo_wti.get_forecast(steps=n_steps)
+fc_log = fc_wti.predicted_mean
+fc_ci_log = fc_wti.conf_int(alpha=0.05)
+
+# Revertir transformacion logaritmica
+fc_precio = np.exp(fc_log)
+fc_ci_precio = np.exp(fc_ci_log)
+
+print("\n=== Prediccion WTI (USD/barril) - 8 semanas ===")
+df_fc = pd.DataFrame({
+    'Pred (USD)': fc_precio.round(2),
+    'IC_inf': fc_ci_precio.iloc[:, 0].round(2),
+    'IC_sup': fc_ci_precio.iloc[:, 1].round(2)
+})
+print(df_fc)
+
+# Grafica de prediccion
+fig, ax = plt.subplots(figsize=(12, 5))
+hist_plot = precio_wti[-52:]
+ax.plot(hist_plot.index, hist_plot, color='saddlebrown',
+        label='Precio historico (1 ano)')
+ax.plot(fc_precio.index, fc_precio, 'o--',
+        color='darkorange', label='Prediccion 8 semanas')
+ax.fill_between(fc_ci_precio.index,
+                fc_ci_precio.iloc[:, 0],
+                fc_ci_precio.iloc[:, 1],
+                alpha=0.3, color='orange', label='IC 95%')
+ax.set_title('Prediccion precio WTI - SARIMA(1,1,1)(0,1,1)_52')
+ax.set_ylabel('USD por barril')
+ax.legend()
+plt.tight_layout()
+plt.savefig('wti_forecast.png', dpi=150, bbox_inches='tight')
+plt.show()
+\end{lstlisting}
+
+\subsubsection{Interpretación de resultados}
+
+Los precios del petróleo WTI en niveles son claramente no estacionarios ($I(1)$): la ADF no
+rechaza la raíz unitaria en log-precios, pero sí en la primera diferencia. Al aplicar también
+la diferencia estacional de orden 52 semanas, se elimina la autocorrelación estacional visible
+en los picos de la ACF en rezagos múltiplos de 52. El modelo SARIMA$(1,1,1)(0,1,1)_{52}$ es
+un punto de partida estándar (equivalente al modelo ``airline'' estacional), donde el parámetro
+MA estacional $\Theta_1$ captura el ajuste ante choques anuales. La predicción se transforma
+de vuelta a la escala de precios mediante $\hat{P}_t = \exp(\hat{\ell}_t)$, con intervalos
+de confianza que reflejan la alta incertidumbre de los precios de commodities.
+
+% ────────────────────────────────────────────────────────────────────────────
+\section{Conclusiones}
+% ────────────────────────────────────────────────────────────────────────────
+
+\subsection{Síntesis metodológica}
+
+Los modelos SARIMA ofrecen un marco riguroso y parsimoniosos para el análisis de series de
+tiempo financieras. La metodología Box-Jenkins proporciona un procedimiento sistemático:
+identificar la estructura mediante ACF y PACF, estimar por máxima verosimilitud, y validar
+mediante diagnóstico de residuos. Los criterios AIC y BIC guían la selección entre modelos
+competidores balanceando ajuste y complejidad.
+
+\subsection{Aplicaciones en finanzas reales}
+
+En la práctica financiera, los modelos SARIMA tienen aplicaciones directas en:
+
+\begin{enumerate}
+  \item \textbf{Gestión de riesgo}: la predicción de volatilidad de rendimientos (vía la
+        varianza de los errores de pronóstico) alimenta modelos de VaR y CVaR.
+  \item \textbf{Trading sistemático}: señales basadas en componentes AR/MA pueden identificar
+        tendencias de corto plazo explotables (con las reservas del EMH).
+  \item \textbf{Valoración de derivados}: la calibración de modelos de tasa de interés
+        (como Vasicek o CIR) se apoya en el análisis ARIMA de la serie de tasas.
+  \item \textbf{Planificación financiera corporativa}: pronósticos de ingresos, costos
+        operativos e indicadores macroeconómicos con estacionalidad.
+  \item \textbf{Regulación y supervisión}: bancos centrales utilizan modelos SARIMA para
+        proyectar inflación, tipo de cambio y crecimiento económico.
+\end{enumerate}
+
+\subsection{Limitaciones y extensiones}
+
+Los modelos SARIMA modelan exclusivamente la \textit{media condicional} de la serie y asumen
+linealidad. Las principales limitaciones incluyen:
+
+\begin{itemize}
+  \item \textbf{Heterocedasticidad condicional}: los rendimientos financieros presentan
+        \textit{clustering} de volatilidad, que requiere extensiones GARCH.
+  \item \textbf{No linealidad}: regímenes de mercado (crisis vs. bonanza) violan el supuesto
+        de linealidad; los modelos MS-ARIMA o de umbral (SETAR/STAR) son más apropiados.
+  \item \textbf{Alta dimensión}: para múltiples series correlacionadas, los modelos VAR
+        o VARMA son la extensión natural.
+  \item \textbf{Machine learning}: modelos LSTM, Transformer o Prophet pueden capturar
+        patrones complejos, aunque a costa de interpretabilidad.
+\end{itemize}
+
+A pesar de estas limitaciones, los modelos SARIMA permanecen como la referencia canónica
+en cualquier análisis de series de tiempo univariadas, por su sólida fundamentación
+teórica, eficiencia computacional e interpretabilidad de los coeficientes.
+
+% ────────────────────────────────────────────────────────────────────────────
+\section*{Referencias}
+% ────────────────────────────────────────────────────────────────────────────
+\addcontentsline{toc}{section}{Referencias}
+
+\begin{enumerate}
+  \item Box, G.~E.~P., Jenkins, G.~M., Reinsel, G.~C., \& Ljung, G.~M. (2015).
+        \textit{Time Series Analysis: Forecasting and Control} (5th ed.). Wiley.
+
+  \item Hamilton, J.~D. (1994). \textit{Time Series Analysis}. Princeton University Press.
+
+  \item Tsay, R.~S. (2010). \textit{Analysis of Financial Time Series} (3rd ed.). Wiley.
+
+  \item Brockwell, P.~J., \& Davis, R.~A. (2016). \textit{Introduction to Time Series
+        and Forecasting} (3rd ed.). Springer.
+
+  \item Hyndman, R.~J., \& Athanasopoulos, G. (2021). \textit{Forecasting: Principles
+        and Practice} (3rd ed.). OTexts. \url{https://otexts.com/fpp3/}
+
+  \item Akaike, H. (1974). A new look at the statistical model identification.
+        \textit{IEEE Transactions on Automatic Control}, 19(6), 716--723.
+
+  \item Schwarz, G. (1978). Estimating the dimension of a model.
+        \textit{Annals of Statistics}, 6(2), 461--464.
+
+  \item Ljung, G.~M., \& Box, G.~E.~P. (1978). On a measure of lack of fit in time
+        series models. \textit{Biometrika}, 65(2), 297--303.
+
+  \item Dickey, D.~A., \& Fuller, W.~A. (1979). Distribution of the estimators for
+        autoregressive time series with a unit root. \textit{Journal of the American
+        Statistical Association}, 74(366), 427--431.
+
+  \item Seabold, S., \& Perktold, J. (2010). Statsmodels: Econometric and statistical
+        modeling with Python. \textit{Proceedings of the 9th Python in Science Conference}.
+\end{enumerate}
+
+\end{document}
