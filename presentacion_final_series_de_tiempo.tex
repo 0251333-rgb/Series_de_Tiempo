@@ -1,0 +1,753 @@
+\documentclass[12pt,a4paper]{article}
+
+% ── Packages ────────────────────────────────────────────────────────────────
+\usepackage{fontspec}
+\usepackage[spanish]{babel}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{parskip}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{microtype}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+
+% ── Fonts ───────────────────────────────────────────────────────────────────
+\setmainfont{DejaVu Serif}
+\setsansfont{DejaVu Sans}
+\setmonofont{DejaVu Sans Mono}
+
+% ── Colors ──────────────────────────────────────────────────────────────────
+\definecolor{navyblue}{HTML}{1E2A4A}
+\definecolor{teal}{HTML}{0F9B8E}
+\definecolor{amber}{HTML}{F5A623}
+\definecolor{coral}{HTML}{E8573C}
+\definecolor{softgreen}{HTML}{2ECC71}
+\definecolor{purple}{HTML}{7B68EE}
+\definecolor{lightgray}{HTML}{F0F4F8}
+\definecolor{midgray}{HTML}{8FA3BF}
+
+% ── Section formatting ──────────────────────────────────────────────────────
+\titleformat{\section}[block]
+  {\Large\bfseries\color{navyblue}}
+  {\thesection.}{0.5em}{}
+  [\vspace{2pt}\color{teal}\hrule height 1.5pt]
+
+\titleformat{\subsection}[block]
+  {\normalsize\bfseries\color{teal}}
+  {\thesubsection.}{0.5em}{}
+
+\titlespacing{\section}{0pt}{18pt}{8pt}
+\titlespacing{\subsection}{0pt}{10pt}{4pt}
+
+% ── Header/Footer ───────────────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{midgray}Guia Facil -- Series de Tiempo}
+\fancyhead[R]{\small\color{midgray}SARIMAX \& GARCH}
+\fancyfoot[C]{\small\color{midgray}\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{teal}\leaders\hrule height \headrulewidth\hfill}}
+
+% ── Custom boxes ────────────────────────────────────────────────────────────
+\newtcolorbox{analogia}{
+  breakable, enhanced,
+  colback=navyblue!8, colframe=navyblue,
+  fonttitle=\bfseries\small, title={Analogia del mundo real},
+  left=6pt, right=6pt, top=4pt, bottom=4pt, arc=4pt
+}
+
+\newtcolorbox{examen}{
+  breakable, enhanced,
+  colback=softgreen!10, colframe=softgreen!70!black,
+  fonttitle=\bfseries\small, title={Para el examen, recuerda},
+  left=6pt, right=6pt, top=4pt, bottom=4pt, arc=4pt
+}
+
+\newtcolorbox{ojo}{
+  breakable, enhanced,
+  colback=amber!12, colframe=amber!80!black,
+  fonttitle=\bfseries\small, title={Ojo con esto},
+  left=6pt, right=6pt, top=4pt, bottom=4pt, arc=4pt
+}
+
+\newtcolorbox{resultado}{
+  breakable, enhanced,
+  colback=teal!10, colframe=teal,
+  fonttitle=\bfseries\small, title={Conclusion},
+  left=6pt, right=6pt, top=4pt, bottom=4pt, arc=4pt
+}
+
+\newtcolorbox{definicion}[1]{
+  breakable, enhanced,
+  colback=lightgray, colframe=navyblue,
+  fonttitle=\bfseries\small\color{white}, coltitle=white,
+  attach boxed title to top left={yshift=-2mm, xshift=6mm},
+  boxed title style={colback=navyblue, arc=3pt},
+  title={#1},
+  left=6pt, right=6pt, top=8pt, bottom=4pt, arc=4pt
+}
+
+\newtcolorbox{formula}{
+  enhanced,
+  colback=navyblue!5, colframe=navyblue!40,
+  left=8pt, right=8pt, top=4pt, bottom=4pt, arc=3pt
+}
+
+% ── Hyperref ────────────────────────────────────────────────────────────────
+\hypersetup{colorlinks=true, linkcolor=teal, urlcolor=teal}
+
+% ════════════════════════════════════════════════════════════════════════════
+\begin{document}
+% ════════════════════════════════════════════════════════════════════════════
+
+% ── Title page ──────────────────────────────────────────────────────────────
+\begin{titlepage}
+  \pagecolor{navyblue}
+  \color{white}
+  \vspace*{3cm}
+  \begin{center}
+    {\Large\color{teal}\bfseries Series de Tiempo}\\[0.6em]
+    {\Huge\bfseries Guia Rapida y Facil}\\[1em]
+    {\large\color{midgray} SARIMAX $\cdot$ GARCH $\cdot$ VaR $\cdot$ Diagnostico}\\[2.5em]
+    \textcolor{teal}{\rule{8cm}{1.5pt}}\\[2em]
+    {\normalsize Todos los conceptos en palabras simples}\\[0.5em]
+    {\normalsize\color{midgray} con analogias, formulas y ejemplos del examen}\\[3cm]
+    {\small\color{midgray} Basado en: \textit{Ejercicios Propuestos: SARIMAX y familia GARCH}\\
+    Parte A --- Analiticos y Parte B --- CFA Level III\\[0.3em]
+    Mayo 2026}
+  \end{center}
+\end{titlepage}
+\pagecolor{white}
+\color{black}
+
+\tableofcontents
+\newpage
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Conceptos base}
+% ════════════════════════════════════════════════════════════════════════════
+
+\subsection{Serie de tiempo}
+
+\begin{definicion}{Que es una serie de tiempo}
+Una \textbf{lista de numeros ordenados por fecha}: precios diarios, ventas mensuales,
+temperatura cada hora. Lo especial es que el numero de hoy tiene que ver con el de ayer.
+\end{definicion}
+
+\begin{analogia}
+Es como tu calificacion en cada examen del semestre. No son numeros sueltos:
+si te fue mal hoy, probablemente algo paso que tambien afectara el siguiente.
+\end{analogia}
+
+\begin{examen}
+Si los datos tienen fecha y el orden importa $\Rightarrow$ es una serie de tiempo.
+Los metodos normales de estadistica asumen que los datos son \emph{independientes}.
+En una serie de tiempo, \textbf{no lo son}.
+\end{examen}
+
+\begin{ojo}
+El precio de una accion NO es estacionario (sube con el tiempo).
+Los \emph{rendimientos} (\% de cambio diario) SI suelen serlo.
+\end{ojo}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Estacionariedad}
+
+\begin{definicion}{Que significa ser estacionaria}
+Una serie es \textbf{estacionaria} cuando su promedio y su variabilidad no cambian con el
+tiempo. Se ``queda quieta'' alrededor de un nivel fijo.
+\end{definicion}
+
+\begin{analogia}
+Una persona que siempre duerme entre 6 y 8 horas es estacionaria.
+Una que cada mes duerme una hora menos \textbf{no lo es}: tiene tendencia hacia abajo.
+\end{analogia}
+
+\begin{examen}
+Casi todos los modelos del examen requieren que la serie sea estacionaria
+\textbf{antes} de estimarlos. Siempre verifica con el test ADF.
+\end{examen}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Raiz unitaria y prueba ADF}
+
+\begin{definicion}{Que es la raiz unitaria}
+Un choque de hoy afecta \textbf{para siempre}. La serie no regresa a su promedio.
+La \textbf{prueba ADF} (Augmented Dickey-Fuller) detecta si esto ocurre.
+\end{definicion}
+
+\begin{analogia}
+Pelota en el piso: la empujas y se detiene sola \textbf{(estacionaria)}.
+Pelota en el espacio: la empujas y sigue para siempre \textbf{(raiz unitaria)}.
+La prueba ADF pregunta: $\text{estas en el piso o en el espacio?}$
+\end{analogia}
+
+\begin{formula}
+\[
+  H_0\text{: hay raiz unitaria (la serie no es estacionaria)}
+\]
+\begin{itemize}[nosep]
+  \item ADF $< -2.89$ $\Rightarrow$ rechazas $H_0$ $\Rightarrow$ la serie es estacionaria.
+  \item ADF $> -2.89$ $\Rightarrow$ \textbf{no} rechazas $\Rightarrow$ hay raiz unitaria $\Rightarrow$ hay que diferenciar.
+\end{itemize}
+\end{formula}
+
+\begin{examen}
+Del Ejercicio 1: ADF $= -1.42 > -2.89$ $\Rightarrow$ no se rechaza raiz unitaria
+$\Rightarrow$ la serie \textbf{no} es estacionaria $\Rightarrow$ se diferencia con $d=1$, $D=1$.
+\end{examen}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Diferenciar una serie}
+
+\begin{definicion}{Que hace diferenciar}
+Restamos a cada valor el valor del periodo anterior:
+\[
+  \Delta y_t = y_t - y_{t-1}
+\]
+Convierte \emph{niveles} en \emph{cambios}. Una serie con tendencia, al diferenciarse,
+se vuelve estable alrededor de cero.
+\end{definicion}
+
+\begin{analogia}
+El precio de Bitcoin sube anio con anio (no estacionario).
+Pero el cambio diario de Bitcoin ronda cero la mayoria del tiempo (estacionario).
+Diferenciar = pasar de ``cuanto vale'' a ``cuanto cambio''.
+\end{analogia}
+
+\begin{examen}
+$d=1$: diferencia regular. \quad $D=1$: diferencia estacional (restas el valor de hace $s$ periodos).\\
+\textbf{Nunca diferencies de mas}: si $d=2$ cuando no era necesario, pierdes informacion.
+\end{examen}
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Modelos de media}
+% ════════════════════════════════════════════════════════════════════════════
+
+\subsection{ARIMA}
+
+\begin{definicion}{AutoRegressive Integrated Moving Average}
+Predice el valor de hoy usando \textbf{valores pasados} de la misma serie (AR)
+y \textbf{errores pasados} (MA). La I significa que la serie fue diferenciada.
+\end{definicion}
+
+\begin{formula}
+Notacion \textbf{ARIMA$(p,d,q)$}:
+\begin{itemize}[nosep]
+  \item $p$ = cuantos rezagos AR usa (``cuantos dias hacia atras miras'').
+  \item $d$ = cuantas veces diferenciaste la serie.
+  \item $q$ = cuantos errores pasados usa.
+\end{itemize}
+\end{formula}
+
+\begin{analogia}
+Para predecir las ventas de maniana, miras cuanto vendiste ayer y los dias anteriores (AR),
+y tambien si te equivocaste en tu prediccion de ayer (MA).
+La I es que primero convertiste las ventas en \emph{cambios de ventas}.
+\end{analogia}
+
+\begin{ojo}
+ARIMA solo usa la historia de la propia serie.
+Si hay factores externos (tasas, PIB, PMI), necesitas SARIMAX.
+\end{ojo}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{SARIMAX}
+
+\begin{definicion}{Seasonal ARIMA with eXogenous variables}
+ARIMA con dos superpoderes:
+\begin{enumerate}[nosep]
+  \item \textbf{Estacionalidad}: captura patrones que se repiten cada $s$ periodos.
+  \item \textbf{Variables externas (X)}: incluye factores externos que afectan la serie.
+\end{enumerate}
+\end{definicion}
+
+\begin{formula}
+Notacion \textbf{SARIMAX$(p,d,q)(P,D,Q)_s$}. Ecuacion completa del Ejercicio 1:
+\[
+  (1-\Phi_1 B^{12})(1-\phi_1 B)(1-B)(1-B^{12})\,y_t
+  = \beta x_t + (1+\theta_1 B)\,\varepsilon_t
+\]
+\end{formula}
+
+\begin{examen}
+Del Ejercicio 1: $\hat{\beta} = -0.87$, $\text{EE} = 0.12$.
+\[
+  t = \frac{-0.87}{0.12} = -7.25, \qquad
+  \text{IC}_{95\%} = [-1.105,\; -0.635]
+\]
+$|t| = 7.25 \gg 1.96$ $\Rightarrow$ $\hat{\beta}$ es altamente significativo.
+Tasa de EUA sube 1 p.p. $\Rightarrow$ precio del bono cae $\approx 58\%$.
+\end{examen}
+
+\begin{ojo}
+Las variables externas deben ser \textbf{exogenas}: no pueden ser causadas por lo que
+estas prediciendo. Si lo son, el coeficiente $\hat{\beta}$ queda sesgado (inconsistente).
+\end{ojo}
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{La familia GARCH}
+% ════════════════════════════════════════════════════════════════════════════
+
+\subsection{Heterocedasticidad y prueba ARCH}
+
+\begin{definicion}{Que es heterocedasticidad}
+La variabilidad de la serie \textbf{cambia con el tiempo}.
+Hay periodos muy agitados y periodos muy tranquilos. En finanzas es la norma.
+\end{definicion}
+
+\begin{formula}
+\textbf{Prueba LM-ARCH}: $H_0$: varianza condicional constante (sin efecto ARCH).
+\[
+  \text{Estadistico} = nR^2 \sim \chi^2(q) \text{ bajo } H_0
+\]
+Del Ejercicio 2: LM-ARCH$(5) = 47.83$ ($p \approx 4\times10^{-6}$) $\Rightarrow$ rechazas $H_0$
+$\Rightarrow$ existe efecto ARCH $\Rightarrow$ GARCH es necesario.
+\end{formula}
+
+\begin{examen}
+ACF$(r_t) \approx 0$: los rendimientos son impredecibles en direccion (mercado eficiente).\\
+ACF$(r_t^2) \neq 0$: la \emph{magnitud} de los choques si es predecible.\\
+Dias caoticos siguen a dias caoticos. Eso es lo que modela GARCH.
+\end{examen}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{GARCH(1,1)}
+
+\begin{definicion}{Generalized AutoRegressive Conditional Heteroskedasticity}
+Predice que tan volatil estara el mercado maniana,
+basandose en el choque de ayer y la volatilidad de ayer.
+\end{definicion}
+
+\begin{formula}
+\[
+  \sigma^2_t = \omega + \alpha\,\varepsilon^2_{t-1} + \beta\,\sigma^2_{t-1}
+\]
+\begin{itemize}[nosep]
+  \item $\omega$: nivel base de la varianza.
+  \item $\alpha$: cuanto reacciona a movimientos grandes de ayer.
+  \item $\beta$: cuanto ``hereda'' la volatilidad de ayer.
+  \item Condicion de estabilidad: $\alpha + \beta < 1$.
+\end{itemize}
+\textbf{Varianza de largo plazo} y \textbf{vida media de un choque}:
+\[
+  \bar{\sigma}^2 = \frac{\omega}{1-\alpha-\beta}, \qquad
+  h^* = \frac{\ln 0.5}{\ln(\alpha+\beta)}
+\]
+\end{formula}
+
+\begin{examen}
+Del Ejercicio 3: $\hat{\omega}=0.0285$, $\hat{\alpha}=0.083$, $\hat{\beta}=0.901$.
+\begin{align*}
+  \hat{\alpha}+\hat{\beta} &= 0.984 < 1 \quad \checkmark\\
+  \bar{\sigma}^2 &= \frac{0.0285}{0.016} = 1.781 \;\%^2/\text{dia}
+  \;\Rightarrow\; \bar{\sigma} = 1.335\%\text{ diaria} \approx 21.2\%\text{ anual}\\
+  h^* &\approx 43\text{ dias para disipar la mitad de un choque}
+\end{align*}
+Pronostico con $\varepsilon_t=-2.5\%$, $\hat{\sigma}_t=1.2\%$:
+\[
+  \hat{\sigma}^2_{t+1} = 0.0285 + 0.083(6.25) + 0.901(1.44) = 1.8447
+  \;\Rightarrow\; \hat{\sigma}_{t+1} = 1.358\%
+\]
+\end{examen}
+
+\begin{analogia}
+Es como un pronostico del tiempo para la intensidad del mercado.
+No te dice si va a subir o bajar, pero si te dice si maniana habra tormenta o calma.
+Un susto tarda $\approx 6$ semanas en calmarse a la mitad.
+\end{analogia}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{GJR-GARCH: efecto apalancamiento}
+
+\begin{definicion}{Glosten-Jagannathan-Runkle GARCH}
+Un GARCH que trata diferente las buenas y malas noticias.
+Agrega un parametro $\lambda$ que solo se activa cuando el rendimiento fue \textbf{negativo}.
+\end{definicion}
+
+\begin{formula}
+\[
+  \sigma^2_t = \omega + \alpha\,\varepsilon^2_{t-1}
+  + \lambda\,\varepsilon^2_{t-1}\,\mathbf{1}\{\varepsilon_{t-1}<0\}
+  + \beta\,\sigma^2_{t-1}
+\]
+\begin{itemize}[nosep]
+  \item Choque \textbf{negativo}: contribuye $(\alpha+\lambda)\varepsilon^2$.
+  \item Choque \textbf{positivo}: contribuye solo $\alpha\varepsilon^2$.
+  \item Incremento extra de mala noticia: $\lambda/\alpha \times 100\%$.
+  \item Estacionariedad: $\alpha + \lambda/2 + \beta < 1$.
+\end{itemize}
+\end{formula}
+
+\begin{examen}
+Del Ejercicio 4: $\hat{\alpha}=0.042$, $\hat{\lambda}=0.078$, $\hat{\beta}=0.912$.
+\[
+  \frac{\lambda}{\alpha} = \frac{0.078}{0.042} = 1.857
+  \;\Rightarrow\; \text{malas noticias generan } +186\%\text{ mas volatilidad}
+\]
+\[
+  \alpha + \frac{\lambda}{2} + \beta = 0.042 + 0.039 + 0.912 = 0.993 < 1 \quad\checkmark
+\]
+\end{examen}
+
+\begin{analogia}
+Tu corazon late mas rapido con malas noticias que con buenas del mismo tamano.
+Los mercados tambien: las caidas generan mas panico (volatilidad) que las subidas euforia.
+\end{analogia}
+
+\begin{ojo}
+Sin capturar este efecto, el VaR subestima el riesgo \emph{justo en los dias de panico},
+cuando mas importa. Basilea III lo exige.
+\end{ojo}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{EGARCH: sin restricciones de signo}
+
+\begin{definicion}{Exponential GARCH --- Nelson 1991}
+Modela el \textbf{logaritmo} de la varianza.
+Los parametros pueden ser negativos y $\sigma^2_t > 0$ se garantiza automaticamente.
+\end{definicion}
+
+\begin{formula}
+\[
+  \ln\sigma^2_t = \omega
+  + \alpha\!\left(|z_{t-1}| - \sqrt{2/\pi}\right)
+  + \gamma\,z_{t-1}
+  + \beta\ln\sigma^2_{t-1}
+\]
+\begin{itemize}[nosep]
+  \item $\gamma < 0$: caidas generan mas volatilidad (efecto apalancamiento).
+  \item No necesita restricciones de signo sobre los parametros.
+  \item Estacionariedad: $|\beta| < 1$.
+\end{itemize}
+\end{formula}
+
+\begin{examen}
+Del Ejercicio 5: $\hat{\gamma}=-0.063$.
+\begin{align*}
+  g(+2) &= 0.112(1.202) - 0.126 = 0.0086 \\
+  g(-2) &= 0.112(1.202) + 0.126 = 0.2606 \\
+  \text{Diferencia} &= 0.252
+  \;\Rightarrow\; \sigma^2_t \text{ se multiplica por }
+  e^{0.252} \approx 1.29\;(+29\%\text{ extra por choque negativo})
+\end{align*}
+\end{examen}
+
+\begin{analogia}
+En el GARCH normal, un parametro negativo podria hacer la varianza negativa (imposible).
+El EGARCH lo soluciona trabajando en escala logaritmica:
+como trabajar con decibeles en lugar de watts.
+\end{analogia}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{GARCH-M: prima de riesgo}
+
+\begin{definicion}{GARCH-in-Mean}
+La volatilidad de hoy entra como predictor del \textbf{retorno} de hoy.
+A mas riesgo, mas retorno esperado (Merton 1973).
+\end{definicion}
+
+\begin{formula}
+\[
+  r_t = \mu + \delta\,\sigma_t + \varepsilon_t
+\]
+\begin{itemize}[nosep]
+  \item $\delta > 0$: prima de riesgo positiva.
+  \item Por cada 1\% de $\sigma_t$, el retorno esperado sube $\delta$ p.p.
+\end{itemize}
+\textbf{Sharpe dinamico}:
+\[
+  \text{SR}_t = \hat{\delta} + \frac{\hat{\mu}-r_f}{\hat{\sigma}_t}
+  \quad\text{(cambia cada dia con la volatilidad)}
+\]
+\end{formula}
+
+\begin{examen}
+Del Ejercicio 6: $\hat{\delta}=0.38$, $\hat{\sigma}_t=8\%$.
+\[
+  E_t[r_{t+1}] = 0.012 + 0.38\times 0.08 = 4.24\%\text{ trimestral}
+  \;\Rightarrow\; (1.0424)^4 - 1 \approx 18.1\%\text{ anual}
+\]
+\end{examen}
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Diagnostico del modelo}
+% ════════════════════════════════════════════════════════════════════════════
+
+\subsection{Los 5 pasos para validar un modelo GARCH}
+
+\begin{definicion}{Por que validar?}
+Despues de estimar el modelo, revisas los \textbf{residuales estandarizados}
+$\hat{z}_t = \varepsilon_t/\hat{\sigma}_t$.
+Deben ser ruido blanco. Si hay patron sobrante, el modelo esta incompleto.
+\end{definicion}
+
+\begin{enumerate}[leftmargin=*, label=\textbf{Paso \arabic*.}]
+  \item \textbf{Ljung-Box sobre $\hat{z}_t$}\\
+    $p > 0.05$ $\Rightarrow$ no autocorrelacion en media $\Rightarrow$ ARIMA correcto.
+
+  \item \textbf{Ljung-Box sobre $\hat{z}_t^2$ + prueba LM-ARCH}\\
+    $p > 0.05$ $\Rightarrow$ no heterocedasticidad residual $\Rightarrow$ GARCH correcto.
+
+  \item \textbf{Jarque-Bera + Q-Q plot}\\
+    Si se rechaza normalidad $\Rightarrow$ usar $t$-Student con $\nu$ grados de libertad:
+    \[
+      \nu \approx \frac{6}{\text{exceso de curtosis}} + 4
+    \]
+
+  \item \textbf{Sign-Bias y Negative-Size-Bias (Engle \& Ng 1993)}\\
+    Si $p < 0.05$ $\Rightarrow$ hay asimetria no capturada $\Rightarrow$ usar GJR-GARCH o EGARCH.
+
+  \item \textbf{Persistencia y estacionariedad}\\
+    Confirmar $\alpha+\beta < 1$ y calcular vida media: $h^* = \ln(0.5)/\ln(\alpha+\beta)$.
+\end{enumerate}
+
+\begin{examen}
+Del Ejercicio 7 (MXN/USD):
+\begin{center}
+\begin{tabular}{lcc}
+  \toprule
+  Prueba & Estadistico & Conclusion \\
+  \midrule
+  LB$(\hat{z}_t)$ & $p=0.36 > 0.05$ & ARIMA correcto \checkmark \\
+  LB$(\hat{z}_t^2)$ & $p=0.51 > 0.05$ & GARCH correcto \checkmark \\
+  Jarque-Bera & $p\approx 0$ & Usar $t$-Student ($\nu\approx 6.7$) \\
+  Negative-Size-Bias & $p=0.003 < 0.05$ & Cambiar a GJR o EGARCH \\
+  \bottomrule
+\end{tabular}
+\end{center}
+\end{examen}
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{VaR dinamico con GARCH}
+% ════════════════════════════════════════════════════════════════════════════
+
+\begin{definicion}{Value at Risk}
+La \textbf{perdida maxima} en un dia ``normal malo''.
+VaR al 95\% = en 19 de cada 20 dias no pierdes mas de $X$.
+Con GARCH, ese $X$ \emph{cambia cada dia} porque $\hat{\sigma}_t$ cambia.
+\end{definicion}
+
+\begin{formula}
+\[
+  \text{VaR}_\alpha = -V\!\left(\hat{\mu} + t_{\alpha,\nu}\cdot\hat{\sigma}_t\right)
+\]
+Cuantiles de referencia ($t$-Student, $\nu=6.2$):
+\begin{itemize}[nosep]
+  \item Al 95\%: $t_{5\%,6.2} = -1.9432$
+  \item Al 99\%: $t_{1\%,6.2} = -3.1427$
+\end{itemize}
+\end{formula}
+
+\begin{examen}
+Del Ejercicio 8: $V=\$10{,}000{,}000$, $\hat{\sigma}_t=1.84\%$, $\hat{\mu}=0.045\%$, $\nu=6.2$.
+\begin{align*}
+  \text{VaR}_{95\%} &= -10^7\,[0.00045 + (-1.9432)(0.0184)] = \$353{,}100 \\
+  \text{VaR}_{99\%} &= -10^7\,[0.00045 + (-3.1427)(0.0184)] = \$573{,}800
+\end{align*}
+Escalamiento aproximado a 10 dias:
+\[
+  \text{VaR}^{(10)}_{95\%} \approx \$353{,}100\times\sqrt{10} = \$1{,}116{,}640
+\]
+\textbf{Backtesting de Kupiec}: en 250 dias al 99\%, esperas $\approx 2.5$ excepciones.
+Si hay $\geq 7$, el modelo esta mal calibrado.
+\end{examen}
+
+\begin{ojo}
+La regla $\sqrt{10}$ supone rendimientos i.i.d.\ con varianza constante.
+Bajo GARCH, la varianza es dinamica: hay que \textbf{iterar} los pronosticos dia por dia.
+\end{ojo}
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Inferencia estadistica}
+% ════════════════════════════════════════════════════════════════════════════
+
+\subsection{Estadistico $t$ y $p$-value}
+
+\begin{definicion}{Para que sirven?}
+Responden: ``este coeficiente que estime es real, o pudo salir por puro azar?''
+\end{definicion}
+
+\begin{formula}
+\[
+  t = \frac{\hat{\beta}}{\text{EE}(\hat{\beta})}, \qquad
+  \text{IC}_{95\%} = \hat{\beta} \pm 1.96\times\text{EE}
+\]
+\begin{center}
+\begin{tabular}{ccc}
+  \toprule
+  Nivel de confianza & $|t|$ minimo & $p$ maximo \\
+  \midrule
+  90\% & 1.645 & 0.10 \\
+  \textbf{95\% (estandar)} & \textbf{1.96} & \textbf{0.05} \\
+  99\% & 2.576 & 0.01 \\
+  \bottomrule
+\end{tabular}
+\end{center}
+\end{formula}
+
+\begin{analogia}
+Lanzas una moneda 10 veces y sale cara las 10.
+La probabilidad con una moneda justa es 0.1\% ($p=0.001$).
+Como es tan baja, concluyes que la moneda probablemente esta cargada.
+Eso es exactamente lo que hace el $p$-value con tus coeficientes.
+\end{analogia}
+
+\begin{examen}
+Del Ejercicio 1: $t = -0.87/0.12 = -7.25$.
+IC$_{95\%} = [-1.105,\,-0.635]$: el cero no esta dentro $\Rightarrow$ significativo.\\
+Los tres indicadores (t, p-value, IC) siempre dan la misma conclusion.
+\end{examen}
+
+\begin{ojo}
+El $p$-value \textbf{no} es la probabilidad de que tu hipotesis sea verdadera.
+Es la probabilidad de tus datos \emph{dado que} $H_0$ (efecto $= 0$) fuera verdadera.
+\end{ojo}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{AIC y BIC: elegir el mejor modelo}
+
+\begin{definicion}{Criterios de informacion}
+Comparan modelos: premian buen ajuste y penalizan complejidad.
+El modelo con el numero \textbf{mas bajo} gana.
+\end{definicion}
+
+\begin{formula}
+\[
+  \text{AIC} = -2\ln(L) + 2k, \qquad
+  \text{BIC} = -2\ln(L) + k\ln(T)
+\]
+\begin{itemize}[nosep]
+  \item $k$: numero de parametros. $T$: tamano de muestra.
+  \item BIC penaliza mas fuerte (pues $\ln T > 2$ para $T > 7$).
+  \item AIC premia el ajuste; BIC premia la parsimonia.
+\end{itemize}
+\end{formula}
+
+\begin{examen}
+Del Ejercicio 10 (5 modelos GARCH):
+\begin{center}
+\begin{tabular}{lcccc}
+  \toprule
+  Modelo & AIC & BIC & $k$ & LB($\hat{z}^2$) $p$ \\
+  \midrule
+  GARCH(1,1) Normal  & 3241.8 & 3258.4 & 4 & 0.431 \\
+  GARCH(1,1) $t$     & 3228.5 & \textbf{3249.6} & 5 & 0.512 \\
+  EGARCH(1,1) $t$    & 3226.1 & 3251.6 & 6 & 0.498 \\
+  GJR-GARCH $t$      & \textbf{3224.3} & 3253.3 & 7 & 0.487 \\
+  GARCH(2,2) Normal  & 3239.6 & 3278.5 & 6 & 0.391 \\
+  \bottomrule
+\end{tabular}
+\end{center}
+Por AIC: \textbf{GJR-GARCH-$t$} (minimo $=3224.3$). \quad
+Por BIC: \textbf{GARCH(1,1)-$t$} (minimo $=3249.6$).\\
+Para Basilea III $\Rightarrow$ GJR-GARCH-$t$: captura colas pesadas y asimetria.
+\end{examen}
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Resumen en una tabla}
+% ════════════════════════════════════════════════════════════════════════════
+
+\begin{center}
+\renewcommand{\arraystretch}{1.45}
+\begin{tabular}{>{\bfseries}p{3cm} p{5.5cm} p{5.5cm}}
+  \toprule
+  Concepto & En palabras simples & Para el examen \\
+  \midrule
+  Serie de tiempo
+    & Datos con fecha donde el orden importa y el ayer afecta el hoy.
+    & Si los datos tienen fecha y el orden importa $\Rightarrow$ modelos especiales. \\
+
+  Estacionariedad
+    & La serie se queda quieta sin tendencia.
+    & Requisito para casi todos los modelos. Verificar con ADF. \\
+
+  ADF
+    & Detecta si hay que diferenciar.
+    & ADF $> -2.89$ $\Rightarrow$ diferencia la serie. \\
+
+  ARIMA
+    & Predice usando la historia de la propia serie.
+    & ARIMA$(p,d,q)$: $p$=rezagos AR, $d$=diferencias, $q$=errores MA. \\
+
+  SARIMAX
+    & ARIMA + estacionalidad + variables externas.
+    & $\hat{\beta}$ mide el efecto externo. Requiere exogeneidad estricta. \\
+
+  GARCH(1,1)
+    & Predice la volatilidad con el choque y la vol.\ de ayer.
+    & $\alpha+\beta<1$; $\bar{\sigma}^2=\omega/(1{-}\alpha{-}\beta)$; vida media $h^*$. \\
+
+  GJR-GARCH
+    & Malas noticias $\Rightarrow$ mas volatilidad que buenas.
+    & Efecto extra: $\lambda/\alpha$. Cond.: $\alpha+\lambda/2+\beta<1$. \\
+
+  EGARCH
+    & GARCH en log, sin restricciones de signo.
+    & $\gamma<0$ $\Rightarrow$ efecto apalancamiento. Cond.: $|\beta|<1$. \\
+
+  GARCH-M
+    & A mas volatilidad, mas retorno esperado.
+    & $\delta>0$: prima de riesgo. $E[r]=\mu+\delta\hat{\sigma}_t$. \\
+
+  VaR dinamico
+    & Perdida maxima actualizada cada dia con GARCH.
+    & VaR$=-V(\hat{\mu}+t_{\alpha,\nu}\hat{\sigma}_t)$. No usar $\sqrt{10}$ con GARCH. \\
+
+  $t$ y $p$-value
+    & Confirman si el coeficiente es real o casualidad.
+    & $|t|>1.96$ o $p<0.05$ $\Rightarrow$ significativo al 95\%. \\
+
+  AIC / BIC
+    & Eligen el mejor modelo entre candidatos.
+    & El mas bajo gana. BIC penaliza mas la complejidad. \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Respuestas Parte B (CFA Level III)}
+% ════════════════════════════════════════════════════════════════════════════
+
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{ccccccccccc}
+  \toprule
+  P11 & P12 & P13 & P14 & P15 & P16 & P17 & P18 & P19 & P20 \\
+  \midrule
+  \textbf{B} & \textbf{B} & \textbf{B} & \textbf{B} & \textbf{B}
+  & \textbf{B} & \textbf{A} & \textbf{B} & \textbf{A} & \textbf{C} \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\bigskip
+
+\begin{resultado}
+\textbf{Clave rapida de cada respuesta:}
+\begin{itemize}[nosep]
+  \item \textbf{P11 (B)}: ACF$(r^2)\neq 0$ $\Rightarrow$ heterocedasticidad condicional $\Rightarrow$ GARCH.
+  \item \textbf{P12 (B)}: $\alpha+\beta=0.99$ $\Rightarrow$ vida media $\approx 69$ dias $\Rightarrow$ disipacion lenta.
+  \item \textbf{P13 (B)}: EGARCH modela $\ln\sigma^2$, sin restricciones de signo, captura asimetria.
+  \item \textbf{P14 (B)}: VaR-GARCH $\geq$ VaR historico cuando $\hat{\sigma}_t >$ promedio historico.
+  \item \textbf{P15 (B)}: Requiere exogeneidad estricta: Cov$(x_t,\varepsilon_s)=0$ para todo $t,s$.
+  \item \textbf{P16 (B)}: LB$(\hat{z}^2)$ $p=0.002<0.05$ $\Rightarrow$ queda heterocedasticidad $\Rightarrow$ enriquecer GARCH.
+  \item \textbf{P17 (A)}: $\hat{\delta}>0$ $\Rightarrow$ prima de riesgo positiva (mas vol.\ $\Rightarrow$ mas retorno).
+  \item \textbf{P18 (B)}: $\Delta$AIC$=13.3$ a favor del modelo $t$, muy superior al costo de 1 parametro.
+  \item \textbf{P19 (A)}: $\sqrt{10}$ supone i.i.d.; bajo GARCH hay que iterar $E_t[\sigma^2_{t+h}]$.
+  \item \textbf{P20 (C)}: LB no rechaza (dinamica correcta); JB rechaza $\Rightarrow$ usar QML o $t$-Student.
+\end{itemize}
+\end{resultado}
+
+\vfill
+\begin{center}
+  \textcolor{midgray}{\small\rule{4cm}{0.3pt}\quad Fin de la Guia\quad\rule{4cm}{0.3pt}}
+\end{center}
+
+\end{document}
